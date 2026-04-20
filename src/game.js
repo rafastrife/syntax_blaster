@@ -1,21 +1,20 @@
 /**
- * @fileoverview Main game controller — state, loop, input handling, EMP mechanic.
- * Entry point imported directly by index.html as an ES module.
+ * @fileoverview Main game controller — state, loop, input, EMP and leaderboard.
  */
 
-import { WORDS, C }            from './constants.js';
-import { AudioEngine }          from './audio.js';
-import { MatrixRain }           from './matrix.js';
-import { drawShip }             from './ship.js';
+import { WORDS, C }                          from './constants.js';
+import { AudioEngine }                        from './audio.js';
+import { MatrixRain }                         from './matrix.js';
+import { drawShip }                           from './ship.js';
 import {
-    drawWord,
-    fireBullet,
-    updateBullets,
-    spawnParticles,
-    updateParticles,
-    EmpWave,
+    drawWord, fireBullet, updateBullets,
+    spawnParticles, updateParticles, EmpWave,
 } from './entities.js';
-import { drawHUD }              from './hud.js';
+import { drawHUD }                            from './hud.js';
+import {
+    isConfigured, getTopScores, submitScore, subscribeRealtime,
+} from './leaderboard.js';
+import { NameInputController }               from './nameInput.js';
 
 // ── Canvas ───────────────────────────────────────────────────
 const canvas  = document.getElementById('game-canvas');
@@ -29,8 +28,56 @@ function resize() {
 resize();
 
 // ── Singletons ───────────────────────────────────────────────
-const audio = new AudioEngine();
-let matrix  = null;
+const audio     = new AudioEngine();
+const nameInput = new NameInputController(document.getElementById('name-overlay'));
+let   matrix    = null;
+let   unsubRealtime = () => {};
+
+// ── Leaderboard rendering ────────────────────────────────────
+
+/**
+ * Render the leaderboard list inside the given container.
+ * @param {Array|null} scores   null → show loading spinner.
+ * @param {number}     [highlightScore]  Current player's score for highlighting.
+ * @param {string}     [targetId='leaderboard-list']
+ */
+function renderLeaderboard(scores, highlightScore = null, targetId = 'leaderboard-list') {
+    const el = document.getElementById(targetId);
+    if (!el) return;
+
+    if (scores === null) {
+        el.innerHTML = '<p class="lb-status">// CONNECTING TO MAINFRAME...</p>';
+        return;
+    }
+
+    if (!isConfigured()) {
+        el.innerHTML = `
+            <p class="lb-status lb-warn">// LEADERBOARD OFFLINE</p>
+            <p class="lb-status lb-dim">Configure Supabase keys in<br>src/leaderboard.js to enable.</p>`;
+        return;
+    }
+
+    if (scores.length === 0) {
+        el.innerHTML = `
+            <p class="lb-status lb-dim">// NO RECORDS FOUND</p>
+            <p class="lb-status lb-dim">Be the first to hack the kernel.</p>`;
+        return;
+    }
+
+    el.innerHTML = scores.map((s, i) => {
+        const isYou = highlightScore !== null && s.score === highlightScore;
+        const dots  = '.'.repeat(Math.max(4, 20 - s.name.length - String(s.score).length));
+        return `
+            <div class="lb-row${isYou ? ' lb-you' : ''}">
+                <span class="lb-rank">${String(i + 1).padStart(2, '0')}.</span>
+                <span class="lb-name">${s.name}</span>
+                <span class="lb-dots">${dots}</span>
+                <span class="lb-score">${String(s.score).padStart(6, '0')}</span>
+                <span class="lb-wave">W${String(s.wave).padStart(2, '0')}</span>
+                ${isYou ? '<span class="lb-you-tag">◀ YOU</span>' : ''}
+            </div>`;
+    }).join('');
+}
 
 // ── Game State factory ───────────────────────────────────────
 function makeState() {
@@ -39,26 +86,27 @@ function makeState() {
         score:      0,
         combo:      0,
         maxCombo:   0,
-        buffer:     100,       // 0-100 %
+        buffer:     100,
         wave:       1,
         waveTimer:  0,
         spawnTimer: 0,
-        spawnRate:  2200,      // ms between spawns (decreases per wave)
+        spawnRate:  2200,
         words:      [],
         bullets:    [],
         particles:  [],
         empWaves:   [],
         activeWord: null,
         killed:     0,
-        laserFlash: 0,         // 0-1, decays each frame
-        empCharges: 3,         // ← EMP ability
+        laserFlash: 0,
+        empCharges: 3,
         ship: { x: canvas.width / 2, y: canvas.height - 70 },
     };
 }
 
-let gs          = null;
-let animId      = null;
-let lastTime    = 0;
+let gs       = null;
+let animId   = null;
+let lastTime = 0;
+let scene    = 'menu'; // 'menu', 'game', 'gameover', 'leaderboard'
 
 // ── Spawn ────────────────────────────────────────────────────
 function spawnWord() {
@@ -71,72 +119,97 @@ function spawnWord() {
 // ── EMP ──────────────────────────────────────────────────────
 function activateEMP() {
     if (gs.empCharges <= 0 || gs.words.length === 0) return;
-
     gs.empCharges--;
     audio.play('emp');
 
-    // Destroy every visible word, spawn explosion particles for each
     for (const w of gs.words) {
         spawnParticles(gs.particles, w.x, w.y, C.purple, 20);
-        spawnParticles(gs.particles, w.x, w.y, C.cyan,    8);
-        gs.score  += 5;   // small bonus per cleared word
+        spawnParticles(gs.particles, w.x, w.y, C.cyan, 8);
+        gs.score  += 5;
         gs.killed += 1;
     }
     gs.words      = [];
     gs.activeWord = null;
-    gs.combo      = Math.max(0, gs.combo - 1);  // slight penalty: combos reset toward 0
-
-    // Spawn expanding shockwave ring from ship centre
+    gs.combo      = Math.max(0, gs.combo - 1);
     gs.empWaves.push(new EmpWave(gs.ship.x, gs.ship.y));
 }
 
-// ── Damage / Game Over ────────────────────────────────────────
+// ── Damage ───────────────────────────────────────────────────
 function takeDamage(amount) {
     gs.buffer = Math.max(0, gs.buffer - amount);
     if (gs.buffer <= 0) triggerGameOver();
 }
 
-function triggerGameOver() {
+// ── Game Over (async — handles leaderboard flow) ─────────────
+async function triggerGameOver() {
     gs.running = false;
+    scene = 'gameover';
     audio.play('gameover');
+
+    // Fill base stats
     document.getElementById('go-score').textContent  = String(gs.score).padStart(6, '0');
     document.getElementById('go-combo').textContent  = gs.maxCombo;
     document.getElementById('go-killed').textContent = gs.killed;
+
+    // Show overlay with loading leaderboard
     overlay.classList.add('visible');
+    renderLeaderboard(null);
+
+    // Fetch current top 10
+    const scores = await getTopScores();
+    renderLeaderboard(scores, gs.score > 0 ? gs.score : null);
+
+    // Check if player qualifies for top 10
+    const qualifies = gs.score > 0 &&
+        (scores.length < 10 || gs.score > (scores[scores.length - 1]?.score ?? 0));
+
+    if (qualifies) {
+        // Show arcade name input
+        const name = await nameInput.prompt(gs.score);
+
+        // Write to Supabase
+        await submitScore({ name, score: gs.score, wave: gs.wave });
+
+        // Refresh leaderboard with the new entry highlighted
+        const updated = await getTopScores();
+        renderLeaderboard(updated, gs.score);
+    }
+
+    // Start realtime listener while player is on game over screen
+    unsubRealtime();
+    unsubRealtime = subscribeRealtime((fresh) => renderLeaderboard(fresh, gs.score));
 }
 
 // ── Main Loop ─────────────────────────────────────────────────
 function loop(ts) {
-    const dt = Math.min((ts - lastTime) / 1000, 0.1);  // seconds, capped
+    const dt = Math.min((ts - lastTime) / 1000, 0.1);
     lastTime  = ts;
-    if (!gs.running) return;
 
-    // Wave progression (every 30 s)
+    ctx.fillStyle = C.bg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (matrix) matrix.draw(ctx, dt);
+
+    if (scene !== 'game' || !gs || !gs.running) {
+        animId = requestAnimationFrame(loop);
+        return;
+    }
+
     gs.waveTimer += dt;
     if (gs.waveTimer >= 30) { gs.wave++; gs.waveTimer = 0; }
 
-    // Spawn timing
     gs.spawnTimer += dt;
     const spawnSec = Math.max(0.5, (gs.spawnRate - gs.wave * 60) / 1000);
     if (gs.spawnTimer >= spawnSec) { spawnWord(); gs.spawnTimer = 0; }
 
-    gs.laserFlash  = Math.max(0, gs.laserFlash - dt * 4);
-    gs.ship.x      = canvas.width / 2;   // always centred
+    gs.laserFlash = Math.max(0, gs.laserFlash - dt * 4);
+    gs.ship.x     = canvas.width / 2;
 
-    // ── Draw ───────────────────────────────────────────────
-    ctx.fillStyle = C.bg;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    matrix.draw(ctx, dt);
-
-    // EMP shockwaves
     for (let i = gs.empWaves.length - 1; i >= 0; i--) {
         gs.empWaves[i].update(dt);
         gs.empWaves[i].draw(ctx);
         if (gs.empWaves[i].isDead()) gs.empWaves.splice(i, 1);
     }
 
-    // Words
     for (let i = gs.words.length - 1; i >= 0; i--) {
         const w = gs.words[i];
         w.y += w.speed * (dt * 60);
@@ -162,12 +235,11 @@ function loop(ts) {
 
 // ── Input ─────────────────────────────────────────────────────
 window.addEventListener('keydown', (e) => {
-    if (!gs.running) return;
+    if (scene !== 'game' || !gs || !gs.running) return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
 
-    audio.ensureRunning();  // must be inside user gesture
+    audio.ensureRunning();
 
-    // SPACE → EMP
     if (e.code === 'Space') {
         e.preventDefault();
         activateEMP();
@@ -180,7 +252,6 @@ window.addEventListener('keydown', (e) => {
     if (gs.activeWord) {
         const w = gs.activeWord;
         if (w.text[w.typedIdx] === key) {
-            // Correct keystroke
             w.typedIdx++;
             gs.score += 10 + gs.combo;
             audio.play('type');
@@ -188,7 +259,6 @@ window.addEventListener('keydown', (e) => {
             gs.laserFlash = 1;
 
             if (w.typedIdx >= w.text.length) {
-                // Word destroyed!
                 gs.combo++;
                 gs.killed++;
                 if (gs.combo > gs.maxCombo) gs.maxCombo = gs.combo;
@@ -199,24 +269,22 @@ window.addEventListener('keydown', (e) => {
                 gs.laserFlash = 0;
             }
         } else {
-            // Wrong key
             w.hitFlash = 1;
             gs.combo   = 0;
             audio.play('miss');
         }
 
     } else {
-        // Target selection: find lowest matching word
         let best = null, bestY = -1;
         for (const w of gs.words) {
             if (w.text[0] === key && w.y > bestY) { bestY = w.y; best = w; }
         }
 
         if (best) {
-            gs.activeWord  = best;
-            best.active    = true;
-            best.typedIdx  = 1;
-            gs.score      += 10;
+            gs.activeWord = best;
+            best.active   = true;
+            best.typedIdx = 1;
+            gs.score     += 10;
             if (gs.combo > gs.maxCombo) gs.maxCombo = gs.combo;
             audio.play('lock');
             fireBullet(gs.bullets, gs.ship, best);
@@ -236,17 +304,55 @@ window.addEventListener('keydown', (e) => {
             audio.play('miss');
         }
     }
-});
+}, { capture: false });
 
-// ── Init ──────────────────────────────────────────────────────
+// ── Menu / Init Flow ──────────────────────────────────────────
+const menuOverlay = document.getElementById('main-menu-overlay');
+const lbOverlay   = document.getElementById('leaderboard-overlay');
+
+function showMenu() {
+    scene = 'menu';
+    overlay.classList.remove('visible');
+    lbOverlay.classList.remove('visible');
+    menuOverlay.classList.add('visible');
+    
+    if (!animId) {
+        matrix   = new MatrixRain(canvas);
+        lastTime = performance.now();
+        animId   = requestAnimationFrame(loop);
+    }
+}
+
+async function showLeaderboardScreen() {
+    scene = 'leaderboard';
+    menuOverlay.classList.remove('visible');
+    lbOverlay.classList.add('visible');
+    
+    renderLeaderboard(null, null, 'screen-leaderboard-list');
+    const scores = await getTopScores();
+    renderLeaderboard(scores, null, 'screen-leaderboard-list');
+    
+    unsubRealtime();
+    unsubRealtime = subscribeRealtime((fresh) => {
+        renderLeaderboard(fresh, null, 'screen-leaderboard-list');
+    });
+}
+
 function initGame() {
-    if (animId) cancelAnimationFrame(animId);
+    scene = 'game';
+    unsubRealtime();
+    unsubRealtime = () => {};
+
     resize();
     overlay.classList.remove('visible');
-    matrix   = new MatrixRain(canvas);
+    menuOverlay.classList.remove('visible');
+    lbOverlay.classList.remove('visible');
+    
+    renderLeaderboard(null);
+    if (!matrix) matrix = new MatrixRain(canvas);
     gs       = makeState();
     lastTime = performance.now();
-    animId   = requestAnimationFrame(loop);
+    if (!animId) animId = requestAnimationFrame(loop);
 }
 
 window.addEventListener('resize', () => {
@@ -255,13 +361,22 @@ window.addEventListener('resize', () => {
     if (gs)     gs.ship.x = canvas.width / 2;
 });
 
-document.getElementById('btn-restart').addEventListener('click', initGame);
-document.getElementById('btn-exit').addEventListener('click', () => {
-    overlay.innerHTML = `
-        <p style="color:#00ffff;font-family:'JetBrains Mono',monospace;font-size:22px;letter-spacing:4px">
-            SESSION_TERMINATED
-        </p>`;
+// UI Embed listeners
+document.getElementById('btn-menu-start').addEventListener('click', () => {
+    audio.ensureRunning();
+    initGame();
+});
+document.getElementById('btn-menu-leaderboard').addEventListener('click', showLeaderboardScreen);
+document.getElementById('btn-lb-back').addEventListener('click', () => {
+    unsubRealtime();
+    showMenu();
 });
 
-// Kick-off
-initGame();
+document.getElementById('btn-restart').addEventListener('click', initGame);
+document.getElementById('btn-exit').addEventListener('click', () => {
+    unsubRealtime();
+    showMenu();
+});
+
+// Kick-off by showing the Menu
+showMenu();

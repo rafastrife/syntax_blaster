@@ -42,11 +42,63 @@
             <p>&gt; [WARN]  Signal interrupt: SIGKILL_PROC_77</p>
             <p>&gt; Attempting recovery... <span class="err">FAILED</span></p>
         </div>
+
+        <div class="leaderboard-section">
+            <h3 class="lb-title">/// GLOBAL RANKING ///</h3>
+            <div id="leaderboard-list">
+                <p class="lb-status">// CONNECTING TO MAINFRAME...</p>
+            </div>
+        </div>
     </div>
 
     <div class="go-actions">
         <button class="btn btn-primary"   id="btn-restart">RESTART SYSTEM</button>
         <button class="btn btn-secondary" id="btn-exit">EXIT_CMD</button>
+    </div>
+</div>
+
+<!-- ── Name Input Overlay ───────────────────────────────────── -->
+<div id="name-overlay" class="name-overlay">
+    <div class="name-card">
+        <h2 class="name-title">NEW RECORD DETECTED</h2>
+        <p class="name-score-disp">SCORE: <span id="name-display-score">000000</span></p>
+        <p class="name-prompt">ENTER SYSTEM ID (3 CHARS):</p>
+        <div class="name-slots">
+            <span class="name-slot" id="slot-0">_</span>
+            <span class="name-slot" id="slot-1">_</span>
+            <span class="name-slot" id="slot-2">_</span>
+        </div>
+        <button id="btn-confirm-name" class="btn btn-primary" style="margin-top: 24px;">SUBMIT</button>
+    </div>
+</div>
+
+<!-- ── Main Menu Overlay ───────────────────────────────────── -->
+<div id="main-menu-overlay" class="menu-overlay visible">
+    <div class="menu-content">
+        <h1 class="title-syntax">SYNTAX</h1>
+        <h1 class="title-blaster">BLASTER</h1>
+        <hr class="title-separator">
+        <div class="menu-actions">
+            <button class="btn btn-menu-primary" id="btn-menu-start">&gt; NEW_GAME <span class="cursor"></span></button>
+            <button class="btn btn-menu-secondary" id="btn-menu-leaderboard">$ VIEW_LEADERBOARD</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Leaderboard Screen Overlay ───────────────────────────────────── -->
+<div id="leaderboard-overlay" class="menu-overlay">
+    <div class="menu-content lb-screen-content">
+        <h1 class="title-syntax small">HALL OF</h1>
+        <h1 class="title-blaster small">FAME</h1>
+        <hr class="title-separator">
+        
+        <div class="leaderboard-section screen-lb">
+            <div id="screen-leaderboard-list">
+                <p class="lb-status">// CONNECTING TO MAINFRAME...</p>
+            </div>
+        </div>
+
+        <button class="btn btn-menu-secondary" id="btn-lb-back" style="margin-top: 30px;">&lt; RETURN_TO_SYSTEM</button>
     </div>
 </div>
 
