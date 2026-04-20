@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Syntax Blaster — a fast-paced cyberpunk typing game. Hack the kernel before buffer overflow.">
+    <title>Syntax Blaster — Hack the Kernel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<canvas id="game-canvas"></canvas>
+
+<!-- ── Game Over Overlay ───────────────────────────────────── -->
+<div id="overlay" role="dialog" aria-modal="true" aria-label="Game Over">
+
+    <h1 class="glitch" data-text="KERNEL PANIC">KERNEL PANIC</h1>
+    <p class="go-subtitle">G A M E &nbsp; O V E R</p>
+
+    <div class="go-card">
+        <div class="go-row">
+            <span>FINAL_SCORE</span>
+            <span class="val" id="go-score">000000</span>
+        </div>
+        <div class="go-row">
+            <span>MAX_COMBO</span>
+            <span class="val" id="go-combo">0</span>
+        </div>
+        <div class="go-row">
+            <span>WORDS_DESTROYED</span>
+            <span class="val" id="go-killed">0</span>
+        </div>
+        <div class="go-row">
+            <span>SYSTEM_STATUS</span>
+            <span class="val bad">COMPROMISED</span>
+        </div>
+        <div class="go-logs">
+            <p>&gt; [FATAL] Stack overflow at 0x0F22A01</p>
+            <p>&gt; [CRIT]  Memory corruption in user_space_heap</p>
+            <p>&gt; [WARN]  Signal interrupt: SIGKILL_PROC_77</p>
+            <p>&gt; Attempting recovery... <span class="err">FAILED</span></p>
+        </div>
+    </div>
+
+    <div class="go-actions">
+        <button class="btn btn-primary"   id="btn-restart">RESTART SYSTEM</button>
+        <button class="btn btn-secondary" id="btn-exit">EXIT_CMD</button>
+    </div>
+</div>
+
+<!-- Entry point loaded as ES module so it can import sub-modules -->
+<script type="module" src="src/game.js"></script>
+</body>
+</html>

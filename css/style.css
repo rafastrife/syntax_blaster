@@ -1,0 +1,159 @@
+/* ============================================================
+   Syntax Blaster — Global Styles
+   All game visuals are rendered on Canvas.
+   This file handles: reset, body, Game Over overlay UI.
+   ============================================================ */
+
+/* ── Reset ──────────────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ── Body / Canvas ──────────────────────────────────────────── */
+body {
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+#game-canvas { display: block; }
+
+/* ── Game Over Overlay ──────────────────────────────────────── */
+#overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.93);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+#overlay.visible { display: flex; }
+
+/* Glitch Title */
+.glitch {
+    font-size: clamp(36px, 8vw, 78px);
+    font-weight: 700;
+    color: #ff003c;
+    letter-spacing: 6px;
+    position: relative;
+    animation: glitchAnim 1.2s infinite;
+}
+.glitch::before,
+.glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    overflow: hidden;
+}
+.glitch::before {
+    color: #00ffff;
+    clip-path: polygon(0 0, 100% 0, 100% 40%, 0 40%);
+    animation: glitchTop 1.2s infinite;
+}
+.glitch::after {
+    color: #ae81ff;
+    clip-path: polygon(0 60%, 100% 60%, 100% 100%, 0 100%);
+    animation: glitchBot 1.2s infinite;
+}
+
+@keyframes glitchAnim {
+    0%, 100% { transform: translate(0); }
+    20%       { transform: translate(-2px,  1px); }
+    40%       { transform: translate( 2px, -1px); }
+}
+@keyframes glitchTop {
+    0%, 100% { transform: translate(0);    opacity: 1; }
+    33%       { transform: translate( 3px, 0); opacity: .8; }
+    66%       { transform: translate(-3px, 0); opacity: .8; }
+}
+@keyframes glitchBot {
+    0%, 100% { transform: translate(0);    opacity: 1; }
+    33%       { transform: translate(-3px, 0); opacity: .8; }
+    66%       { transform: translate( 3px, 0); opacity: .8; }
+}
+
+/* Subtitle */
+.go-subtitle {
+    font-size: clamp(11px, 2.5vw, 20px);
+    color: #ff003c;
+    letter-spacing: 14px;
+    margin: 8px 0 36px;
+}
+
+/* Stats Card */
+.go-card {
+    border: 1px solid #2a2a2a;
+    background: rgba(10, 10, 18, 0.9);
+    padding: 28px 40px;
+    width: min(460px, 92vw);
+    position: relative;
+}
+/* Corner pips */
+.go-card::before,
+.go-card::after {
+    content: '';
+    position: absolute;
+    width: 10px; height: 10px;
+    background: #ff003c;
+}
+.go-card::before { top: 0;    left: 0;  }
+.go-card::after  { top: 0;    right: 0; }
+
+.go-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: clamp(13px, 2vw, 18px);
+    color: #555;
+    margin-bottom: 14px;
+}
+.go-row .val      { color: #00ffff; }
+.go-row .val.bad  { color: #ff003c; }
+
+.go-logs {
+    margin-top: 24px;
+    font-size: 12px;
+    color: #333;
+    line-height: 1.7;
+    border-top: 1px solid #1a1a1a;
+    padding-top: 14px;
+}
+.go-logs .err { color: #ff003c; }
+
+/* Buttons */
+.go-actions {
+    display: flex;
+    gap: 16px;
+    margin-top: 36px;
+}
+
+.btn {
+    padding: 14px 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(12px, 2vw, 16px);
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all .2s;
+    border: none;
+}
+.btn-primary {
+    background: #39ff14;
+    color: #000;
+    box-shadow: 0 0 20px rgba(57, 255, 20, 0.4);
+}
+.btn-primary:hover {
+    background: #55ff33;
+    box-shadow: 0 0 32px rgba(57, 255, 20, 0.7);
+}
+.btn-secondary {
+    background: transparent;
+    color: #00ffff;
+    border: 2px solid #00ffff;
+}
+.btn-secondary:hover { background: rgba(0, 255, 255, 0.15); }
