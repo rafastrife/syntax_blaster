@@ -233,21 +233,20 @@ function loop(ts) {
     animId = requestAnimationFrame(loop);
 }
 
-// ── Input ─────────────────────────────────────────────────────
-window.addEventListener('keydown', (e) => {
-    if (scene !== 'game' || !gs || !gs.running) return;
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
+// ── Input Handling (Desktop & Mobile Keyboard) ────────────────
+const mobileInput = document.getElementById('mobile-input');
 
+function processGameInput(strChar, isSpace) {
+    if (scene !== 'game' || !gs || !gs.running) return;
     audio.ensureRunning();
 
-    if (e.code === 'Space') {
-        e.preventDefault();
+    if (isSpace) {
         activateEMP();
         return;
     }
 
-    if (e.key.length !== 1) return;
-    const key = e.key.toUpperCase();
+    if (strChar.length !== 1) return;
+    const key = strChar.toUpperCase();
 
     if (gs.activeWord) {
         const w = gs.activeWord;
@@ -304,7 +303,47 @@ window.addEventListener('keydown', (e) => {
             audio.play('miss');
         }
     }
+}
+
+// Force mobile keyboard popup when tapping canvas
+canvas.addEventListener('touchstart', () => {
+    if (scene === 'game') mobileInput.focus();
+}, { passive: true });
+canvas.addEventListener('click', () => {
+    if (scene === 'game') mobileInput.focus();
+});
+
+// Capture hardware keyboard
+window.addEventListener('keydown', (e) => {
+    if (scene !== 'game' || !gs || !gs.running) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    
+    if (e.code === 'Space') {
+        e.preventDefault();
+        processGameInput(' ', true);
+        return;
+    }
+    
+    if (e.key.length === 1) e.preventDefault();
+    processGameInput(e.key, false);
 }, { capture: false });
+
+// Capture mobile software keyboard events via the hidden input
+mobileInput.addEventListener('input', () => {
+    if (scene !== 'game') return; // Other scenes (e.g. name input) handle this themselves
+
+    const val = mobileInput.value;
+    if (!val) return; 
+    
+    const char = val.slice(-1); 
+    mobileInput.value = '';     
+    
+    if (char === ' ') {
+        processGameInput(' ', true);
+    } else {
+        processGameInput(char, false);
+    }
+});
 
 // ── Menu / Init Flow ──────────────────────────────────────────
 const menuOverlay = document.getElementById('main-menu-overlay');
