@@ -10,8 +10,8 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 // ── Configuration (fill these in) ───────────────────────────
-const SUPABASE_URL      = '';   // e.g. https://abcxyz.supabase.co
-const SUPABASE_ANON_KEY = '';   // anon/public key from your project settings
+const SUPABASE_URL = 'https://dwiwmvfcmreeoxaxalaa.supabase.co';   // e.g. https://abcxyz.supabase.co
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3aXdtdmZjbXJlZW94YXhhbGFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MjA2NzMsImV4cCI6MjA5MjI5NjY3M30.9vol7onAc_cHSzFixO8XrIwSvdqPkGI-c7Z2HnibEcE';   // anon/public key from your project settings
 
 const TABLE = 'scores';
 
@@ -83,7 +83,7 @@ export async function submitScore({ name, score, wave }) {
  */
 export function subscribeRealtime(onUpdate) {
     const db = getClient();
-    if (!db) return () => {};
+    if (!db) return () => { };
 
     const channel = db
         .channel('realtime:scores')
