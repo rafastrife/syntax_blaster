@@ -95,13 +95,16 @@ export class NameInputController {
 
         // Software keyboards often swallow native keydown, but hard keyboards send them
         if (e.key === 'Backspace') {
+            e.preventDefault();
             if (this._cursor > 0) {
                 this._cursor--;
                 this._chars[this._cursor] = '_';
             }
         } else if (e.key === 'Enter') {
+            e.preventDefault();
             this._trySubmit();
         } else if (e.key.length === 1 && /[A-Za-z0-9]/.test(e.key) && this._cursor < 3) {
+            e.preventDefault();
             this._chars[this._cursor] = e.key.toUpperCase();
             this._cursor++;
 
