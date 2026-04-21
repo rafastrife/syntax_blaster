@@ -53,10 +53,24 @@ Quando o Digital Ocean detectar seu projeto:
 
 1. Ele vai perguntar o tipo — selecione **Static Site**
 2. Em **Output Directory**, deixe em branco (a raiz `/` é o correto, pois o `index.html` está na raiz)
-3. **Build Command**: deixe em branco (não há build step — é puro HTML+JS)
+3. No painel do Digital Ocean, haverá um **campo de texto** literalmente chamado **"Build Command"**. É lá que você deve copiar e COLA a seguinte linha. (AVISO: Não execute isso no seu terminal do Windows/VSCode, isso é para ser colado no site deles!):
+   ```bash
+   echo "export const SUPABASE_URL = '${SUPABASE_URL}';" > src/config.js && echo "export const SUPABASE_ANON_KEY = '${SUPABASE_ANON_KEY}';" >> src/config.js
+   ```
 
 > [!IMPORTANT]
 > Certifique-se de que o tipo está em **Static Site** e NÃO em "Web Service". Static Site é grátis no App Platform para sites simples.
+
+---
+
+## Passo 5 — Configurando as Variáveis de Ambiente (Segurança)
+
+Nas configurações do seu App (ou na mesma tela de criação em 'Environment Variables'), adicione as duas chaves que você copiou do Supabase:
+
+- Key: `SUPABASE_URL`   | Value: `[SUA_URL_SUPABASE]`
+- Key: `SUPABASE_ANON_KEY` | Value: `[SUA_CHAVE_GIGANTE_JWT]`
+
+> **O Pulo do Gato:** Como o arquivo `src/config.js` está no seu `.gitignore`, ela vai ignorar a sua máquina e não enviará pro GitHub, protegendo você de robôs raspadores de chaves! Mas, graças àqueles comandos que inserimos em *Build Command*, o Digital Ocean vai plugar as chaves e fabricar esse arquivo em tempo real no servidor deles na hora de publicar. Mágica hacker!
 
 ---
 
