@@ -189,6 +189,20 @@ function loop(ts) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     if (matrix) matrix.draw(ctx, dt);
 
+    // Decorate the main menu with our new character standing by
+    if (scene === 'menu') {
+        ctx.save();
+        // Position it to the left of "SYNTAX BLASTER" and a bit higher
+        const alienX = canvas.width / 2 - Math.min(320, canvas.width * 0.35);
+        const alienY = canvas.height / 2 - 150; // Moved up by another 50 pixels to align with "SYNTAX"
+        
+        ctx.translate(alienX, alienY);
+        ctx.scale(1.8, 1.8); // Make it 80% bigger!
+        
+        drawShip(ctx, { x: 0, y: 0 }, 0);
+        ctx.restore();
+    }
+
     if (scene !== 'game' || !gs || !gs.running) {
         animId = requestAnimationFrame(loop);
         return;
