@@ -1,12 +1,26 @@
 /** @fileoverview Shared constants: word bank and colour palette */
 
 export const WORDS = [
-    'FUNCTION','ASYNC','PROMISE','KERNEL','BUFFER','THREAD',
-    'SYSTEM','MEMORY','POINTER','ARRAY','OBJECT','MODULE',
-    'COMPILE','DEBUG','CACHE','PAYLOAD','SOCKET','OVERFLOW',
-    'BITWISE','STRUCT','RETURN','VOID','STATIC','MALLOC',
-    'PROCESS','SIGNAL','MUTEX','DAEMON','FORK','PARSE',
-    'REGEX','STACK','HEAP','BINARY','HEXDUMP','PATCH',
+    // ── JavaScript / TypeScript ──
+    'FUNCTION', 'ASYNC', 'AWAIT', 'EXPORT', 'IMPORT', 'TYPEOF', 
+    'DEBUGGER', 'PROMISE', 'CONSOLE', 'UNDEFINED', 'DOCUMENT',
+
+    // ── Python ──
+    'DEF', 'ELIF', 'LAMBDA', 'YIELD', 'PASS', 'GLOBAL', 
+    'NONLOCAL', 'ASSERT', 'EXCEPT', 'FINALLY', 'TUPLE',
+
+    // ── Java / C# ──
+    'PUBLIC', 'PRIVATE', 'PROTECTED', 'STATIC', 'CLASS', 
+    'INTERFACE', 'EXTENDS', 'IMPLEMENTS', 'ABSTRACT', 'VIRTUAL',
+    'SYNCHRONIZED', 'VOLATILE', 'NAMESPACE', 'OVERRIDE', 'BOOLEAN',
+
+    // ── C / C++ ──
+    'INCLUDE', 'DEFINE', 'STRUCT', 'TYPEDEF', 'UNION', 'SIZEOF', 
+    'UNSIGNED', 'INLINE', 'TEMPLATE', 'CONSTEXPR', 'NULLPTR', 'MALLOC',
+
+    // ── General / Control Flow ──
+    'RETURN', 'BREAK', 'CONTINUE', 'WHILE', 'SWITCH', 'DEFAULT', 
+    'CATCH', 'THROW', 'THIS', 'SUPER', 'CONST', 'FALSE', 'TRUE'
 ];
 
 /** @readonly */
